@@ -1,4 +1,4 @@
-use axum::routing::{delete, get, post, Router};
+use axum::routing::{delete, get, post, put, Router};
 mod handlers;
 use sqlx::postgres::PgPoolOptions;
 
@@ -17,6 +17,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/customers", get(handlers::get_all_customers))
         .route("/customers", post(handlers::create_customer))
         .route("/customers/:id", delete(handlers::delete_customer))
+        .route("/customers/:id", put(handlers::update_customer))
         .with_state(pool);
     axum::Server::bind(&addr.parse().unwrap())
         .serve(app.into_make_service())

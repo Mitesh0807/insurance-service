@@ -143,7 +143,46 @@ pub async fn delete_customer(
         Err(_) => Err(http::StatusCode::INTERNAL_SERVER_ERROR),
     }
 }
+pub async fn update_customer(
+    extract::State(pool): extract::State<PgPool>,
+    extract::Path(id): extract::Path<String>,
+    axum::Json(customer): axum::Json<CreateCustomer>,
+) -> http::StatusCode {
+    let now = chrono::Utc::now();
+    let uuid = uuid::Uuid::parse_str(&id);
+    let res = sqlx::query(
+        r#"
+        UPDATE customers
+        SET first_name = $1,
+            last_name = $2,
+            aadhar_number = $3,
+            date_of_birth = $4,
+            gender = $5,
+            address = $6,
+            updated_at = $7
+        WHERE id = $8
+        "#,
+    )
+    .bind(customer.first_name)
+    .bind(customer.last_name)
+    .bind(customer.aadhar_number)
+    .bind(customer.date_of_birth)
+    .bind(customer.gender)
+    .bind(customer.address)
+    .bind(now)
+    .bind(uuid.unwrap())
+    .execute(&pool)
+    .await
+    .map(|res| match res.rows_affected() {
+        0 => http::StatusCode::NOT_FOUND,
+        _ => http::StatusCode::OK,
+    });
 
+    match res {
+        Ok(status) => status,
+        Err(_) => http::StatusCode::INTERNAL_SERVER_ERROR,
+    }
+}
 //
 // async fn update_customer(
 //     extract::State(pool): extract::State<PgPool>,
