@@ -14,6 +14,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Successfully connected to the database.");
     let app = Router::new()
         .route("/", get(handlers::health_check))
+        .route("/customers", get(handlers::get_all_customers))
         .route("/customers", post(handlers::create_customer))
         .with_state(pool);
     axum::Server::bind(&addr.parse().unwrap())

@@ -1,15 +1,15 @@
 -- Add migration script here
 CREATE TABLE customers (
-    id SERIAL PRIMARY KEY,
-    first_name VARCHAR(255) NOT NULL,
+    id UUID PRIMARY KEY,
+    first_name VARCHAR(253) NOT NULL,
     last_name VARCHAR(255) NOT NULL,
     aadhar_number BIGINT NOT NULL,
     date_of_birth VARCHAR(255) NOT NULL,
     gender VARCHAR(10) NOT NULL,
     address TEXT NOT NULL,
     is_active BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL
 );
 
 

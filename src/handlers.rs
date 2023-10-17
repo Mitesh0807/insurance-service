@@ -1,8 +1,8 @@
 use axum::{extract, http};
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
+use sqlx::{FromRow, PgPool};
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, FromRow)]
 pub struct Customer {
     id: uuid::Uuid,
     first_name: String,
@@ -12,8 +12,8 @@ pub struct Customer {
     gender: String,
     address: String,
     is_active: bool,
-    created_at: chrono::DateTime<chrono::Utc>, // Use NaiveDateTime
-    updated_at: chrono::DateTime<chrono::Utc>, // Use NaiveDateTime
+    created_at: chrono::DateTime<chrono::Utc>,
+    updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 impl Customer {
@@ -54,6 +54,17 @@ pub async fn health_check() -> http::StatusCode {
     http::StatusCode::OK
 }
 
+pub async fn get_all_customers(
+    extract::State(pool): extract::State<PgPool>,
+) -> Result<axum::Json<Vec<Customer>>, http::StatusCode> {
+    let res = sqlx::query_as::<_, Customer>("SELECT * FROM customers")
+        .fetch_all(&pool)
+        .await;
+    match res {
+        Ok(customers) => Ok(axum::Json(customers)),
+        Err(_) => Err(http::StatusCode::INTERNAL_SERVER_ERROR),
+    }
+}
 pub async fn create_customer(
     extract::State(pool): extract::State<PgPool>,
     axum::Json(customer): axum::Json<CreateCustomer>,
@@ -66,18 +77,10 @@ pub async fn create_customer(
         customer.gender,
         customer.address,
     );
-    println!(
-        "{} {} {} {} {} {}",
-        new_customer.first_name,
-        new_customer.last_name,
-        new_customer.aadhar_number,
-        new_customer.date_of_birth,
-        new_customer.gender,
-        new_customer.address
-    );
     let res = sqlx::query(
-        "
+        r#"
         INSERT INTO customers (
+            id,    
             first_name,
             last_name,
             aadhar_number,
@@ -87,9 +90,10 @@ pub async fn create_customer(
             is_active,
             created_at,
             updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-        ",
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        "#,
     )
+    .bind(&new_customer.id)
     .bind(&new_customer.first_name)
     .bind(&new_customer.last_name)
     .bind(&new_customer.aadhar_number)
@@ -110,17 +114,6 @@ pub async fn create_customer(
     }
 }
 
-// async fn get_all_customers(
-//     extract::State(pool): extract::State<sqlx::PgPool>,
-// ) -> Result<axum::Json<Vec<Customer>>, axum::http::StatusCode> {
-//     let res = sqlx::query_as::<_, Customer>("SELECT * FROM customers")
-//         .fetch_all(pool)
-//         .await;
-//     match res {
-//         Ok(customers) => Ok(axum::Json(customers)),
-//         Err(_) => Ok(axum::Json(vec![])),
-//     }
-// }
 // async fn get_customer(
 //     extract::State(pool): extract::State<PgPool>,
 //     extract::Path(id): extract::Path<i32>,
