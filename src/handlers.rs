@@ -105,27 +105,45 @@ pub async fn create_customer(
     .bind(&new_customer.updated_at)
     .execute(&pool)
     .await;
-
-    println!("{:?}", res);
-
     match res {
         Ok(_) => Ok((http::StatusCode::CREATED, axum::Json(new_customer))),
         Err(_) => Err(http::StatusCode::INTERNAL_SERVER_ERROR),
     }
 }
 
-// async fn get_customer(
-//     extract::State(pool): extract::State<PgPool>,
-//     extract::Path(id): extract::Path<i32>,
-// ) -> (axum::Json<Customer>, http::StatusCode) {
-//     let res = sqlx::query_as::<_, Customer>("SELECT * FROM customers WHERE id = $1")
-//         .bind(id)
-//         .fetch_one(&pool);
-//     match res {
-//         Ok(customer) => (axum::Json(customer), http::StatusCode::OK),
-//         Err(_) => (axum::Json(Customer::default()), http::StatusCode::NOT_FOUND),
-//     }
-// }
+pub async fn get_customer(
+    extract::State(pool): extract::State<PgPool>,
+    extract::Path(id): extract::Path<i32>,
+) -> Result<(axum::Json<Customer>, http::StatusCode), http::StatusCode> {
+    let res = sqlx::query_as::<_, Customer>("SELECT * FROM customers WHERE id = $1")
+        .bind(id)
+        .fetch_one(&pool)
+        .await;
+    match res {
+        Ok(customer) => Ok((axum::Json(customer), http::StatusCode::OK)),
+        Err(_) => Err(http::StatusCode::NOT_FOUND),
+    }
+}
+pub async fn delete_customer(
+    extract::State(pool): extract::State<PgPool>,
+    extract::Path(id): extract::Path<String>,
+) -> Result<http::StatusCode, http::StatusCode> {
+    let uuid = uuid::Uuid::parse_str(&id);
+    let res = sqlx::query(
+        r#"
+        DELETE FROM customers
+        WHERE id = $1
+        "#,
+    )
+    .bind(&uuid.unwrap())
+    .execute(&pool)
+    .await;
+    match res {
+        Ok(_) => Ok(http::StatusCode::OK),
+        Err(_) => Err(http::StatusCode::INTERNAL_SERVER_ERROR),
+    }
+}
+
 //
 // async fn update_customer(
 //     extract::State(pool): extract::State<PgPool>,
@@ -161,25 +179,6 @@ pub async fn create_customer(
 //         _ => (axum::Json(Customer::default()), http::StatusCode::OK),
 //     });
 //     res.unwrap()
-// }
-//
-// async fn delete_customer(
-//     extract::State(pool): extract::State<PgPool>,
-//     extract::Path(id): extract::Path<i32>,
-// ) -> http::StatusCode {
-//     let res = sqlx::query(
-//         r#"
-//         DELETE FROM customers
-//         WHERE id = $1
-//         "#,
-//     )
-//     .bind(id)
-//     .execute(&pool)
-//     .await;
-//     match res {
-//         Ok(_) => http::StatusCode::NO_CONTENT,
-//         Err(_) => http::StatusCode::INTERNAL_SERVER_ERROR,
-//     }
 // }
 //
 
