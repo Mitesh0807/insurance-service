@@ -18,6 +18,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/customers", post(handlers::create_customer))
         .route("/customers/:id", delete(handlers::delete_customer))
         .route("/customers/:id", put(handlers::update_customer))
+        .route("/dependents", post(handlers::create_dependents))
         .with_state(pool);
     axum::Server::bind(&addr.parse().unwrap())
         .serve(app.into_make_service())
